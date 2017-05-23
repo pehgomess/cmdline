@@ -1,2 +1,2 @@
-rsync -apRrvvHzc
+rsync -apRrvvHzc dir host:/dir
 ( cd /var/mqm ; tar cf - . ) | ( cd /tmp/mqm ; tar xf - )
