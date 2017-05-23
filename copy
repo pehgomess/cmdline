@@ -1,0 +1,2 @@
+rsync -apRrvvHzc
+( cd /var/mqm ; tar cf - . ) | ( cd /tmp/mqm ; tar xf - )
