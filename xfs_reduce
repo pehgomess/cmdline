@@ -1,0 +1,104 @@
+##########################################################################################
+					Shrink	/	Reduce an XFS LVM Partition
+##########################################################################################
+
+Lab Preparation:
+
+
+- Create a primary lvm partition using fdisk
+/dev/sdb1 LVM = 2G
+
+# fdisk /dev/sdb
+# partprobe
+
+- Create a physical volume
+# pvcreate /dev/sdb1 
+
+- Create a volume group with an extent size of 16M
+# vgcreate -s 16M vg00 /dev/sdb1
+
+- Create logical volume with size of 50 extents
+# lvcreate -l 50 -n lv00 vg00
+
+- Create logical volume with size of 800M
+# lvcreate -L 800M -n lv00 vg00
+
+- Convert the logical volume to xfs file system
+# mkfs.xfs /dev/vg00/lv00
+
+- Mount the partition to a directory
+# mkdir /test
+# mount /dev/vg00/pv00 /test
+
+- Create some file in the directory
+# dd if=/dev/zero of=/test/file01 bs=1024k count=10
+# dd if=/dev/zero of=/test/file02 bs=1024k count=10
+# dd if=/dev/zero of=/test/file03 bs=1024k count=10
+
+- Install the xfsdump package
+# yum install xfsdump -y
+--------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------
+					------------------------------------------------	
+									* First solution *
+					------------------------------------------------
+To shrink the LVM partition we have to backup the data, delete the partition
+recreate it with a smaller size and finaly restore the data.
+
+- Backup the data
+# xfsdump -f /tmp/test.dump /test
+
+- Unmount the logical volume
+# umount /test
+
+- Delete the partition
+# lvremove /dev/vg00/lv00
+
+- Recreate the partition with a smaller size
+# lvcreate -L 400M -n lv00 vg00
+
+- Convert to xfs file system
+# mkfs.xfs -f /dev/vg00/lv00
+
+- Remount the /test partition 
+# mount /dev/vg00/lv00 /test
+
+- Restore the data using xfsrestore
+# xfsrestore -f /tmp/test_dump /test
+
+- Check the content of /test directory
+# ls -l /test
+					------------------------------------------------	
+									* Second solution *
+					------------------------------------------------
+To shrink the LVM partition we have to backup the data, reduce it with a 
+smaller size and finaly restore the data.
+
+- Backup the data
+# xfsdump -f /tmp/test.dump /test
+
+- Unmount the logical volume
+# umount /test
+
+- Reduce the partition using lvreduce command
+# lvreduce -L 400M /dev/vg00/lv00
+
+- Convert to xfs file system
+# mkfs.xfs -f /dev/vg00/lv00
+
+- Remount the /test partition
+# mount /dev/vg00/lv00 /test
+
+- Restore the data using xfsrestore
+# xfsrestore -f /tmp/test/dump /test
+
+- check the content of /test directory
+# ls -l /test
+
+
+
+
+
+https://www.youtube.com/watch?v=PUkHShAHGSU
+
