@@ -1,0 +1,46 @@
+Examining the Contents of an Source RPM
+
+An RPM is a special binary format that contains metadata, cryptographic signature, and an archive of package files. The file archive itself is usually a cpio archive. Use the rpm command itself to view the metadata, and use the rpm2cpio command to extract the cpio archive; the cpio command works on the resulting archive.
+
+View source RPM metadata
+rpm --query --package --info foo-1.0-1.src.rpm
+Note: There are many options besides “--info” to get metadata from an RPM; see the rpm man page or other documentation.
+Unpacking an source RPM file archive
+rpm2cpio foo-1.0-1.src.rpm | cpio --extract --make-directories --verbose
+Setting Up the RPM Build Environment
+
+Before building an source RPM, a few bits of infrastructure must be in place. Below is one of the many possible ways to set up a build environment.
+
+Make sure that rpmbuild and friends are available
+yum install rpm-build
+Establish a “root” directory for RPMs and related files
+mkdir /your/working/directory/here/rpm
+cd /your/working/directory/here/rpm
+mkdir BUILD
+mkdir RPMS
+mkdir SOURCES
+mkdir SPECS
+mkdir SRPMS
+Edit RPM config file to tell RPM where to find stuff
+$HOME/.rpmmacros
+Contents:
+%_topdir    /your/working/directory/here/rpm
+%_tmppath   %{_topdir}/tmp
+Defaults and further information can be gleaned from:
+/usr/lib/rpm/macros
+Building a Source RPM
+
+The rpmbuild command builds source and binary RPMs from an RPM spec file and its associated source files. A spec file defines several different stages for a full build (see below for more details), and the rpmbuild command gives you the choice of which stage to stop at.
+
+Execute the preparatory stage
+rpmbuild -bp /your/working/directory/here/rpm/SPECS/foo.spec
+Execute the preparatory and build stages
+rpmbuild -bc /your/working/directory/here/rpm/SPECS/foo.spec
+Execute the preparatory, build, and install stages
+rpmbuild -bi /your/working/directory/here/rpm/SPECS/foo.spec
+Build the complete binary RPM(s)
+rpmbuild -bb /your/working/directory/here/rpm/SPECS/foo.spec
+Build the complete source RPM
+rpmbuild -bs /your/working/directory/here/rpm/SPECS/foo.spec
+Build everything
+rpmbuild -ba /your/working/directory/here/rpm/SPECS/foo.spec
