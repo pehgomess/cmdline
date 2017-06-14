@@ -1,3 +1,5 @@
+http://vdt.cs.wisc.edu/internal/native/using-srpm.html
+
 Examining the Contents of an Source RPM
 
 An RPM is a special binary format that contains metadata, cryptographic signature, and an archive of package files. The file archive itself is usually a cpio archive. Use the rpm command itself to view the metadata, and use the rpm2cpio command to extract the cpio archive; the cpio command works on the resulting archive.
