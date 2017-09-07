@@ -1,12 +1,13 @@
 1.	Criar o arquivo de rotate
 
 	touch /etc/logrotate.d/cifs-debug
-	/var/log/cifs-debug/backup/backup.tar.bz2 {
+	/var/log/cifs-debug/* {
 			daily
 			rotate 5
-			nocompress
+			olddir /var/log/cifs-debug/backup/
+			compress
 			dateext
-			extension .tar.bz2
+			extension .gz
 			missingok
 	}
 
@@ -29,7 +30,7 @@
 
 6.	Criar o dump monitorando a porta 445 na crontab (das 21:00 até as 22:30)
 
-	00 21 * * * /usr/sbin/tcpdump -i any -s100 -w /var/log/cifs-debug/cifs-debug_`hostname`_`date +'\%F_hora_\%H-\%S-\%M'`.pcap &
+	00 21 * * * /usr/sbin/tcpdump -i any -s100 -z gzip -w /var/log/cifs-debug/cifs-debug_$(hostname | awk -F. '{print $1}')_filegzip.pcap port 445 &
 	30 23 * * * /usr/bin/killall tcpdump
 
 7.	Remover o tracesmb (log) todos os dias as 23:40
@@ -44,92 +45,84 @@
 
 
 #!/bin/bash
-
 # cifs-debug
 # monitorar as atividades do cifs, log e tcpdump
 #
 # argumentos: sh <script> man
-
 if [ ! $# == 1 ]; then
-  echo "Erro, use uma das opcoes abaixo:"
-  echo "Usage: $0 tracesmb "
-  echo "Usage: $0 file "
-  echo "Usage: $0 ajtracesmb "
-  echo "Usage: $0 bkp "
-  echo "Usage: $0 man "
-  exit
+ echo "Erro, use uma das opcoes abaixo:"
+ echo "Usage: $0 tracesmb "
+ echo "Usage: $0 file "
+ echo "Usage: $0 ajtracesmb "
+ echo "Usage: $0 man "
+ exit
 fi
-
 DATAF=$(date +"%d-%m-%y")
 DIRCIFS="/var/log/cifs-debug"
 [ -d "$DIRCIFS" ] || mkdir ${DIRCIFS}
-
 tracesmb()
 {
-    if [ `cat /proc/fs/cifs/cifsFYI` == "7" ] ; then
-                echo
-    else
-        echo 7 > /proc/fs/cifs/cifsFYI
-    fi
+if [ -f "/proc/fs/cifs/cifsFYI" ] ; then
+ if [ `cat /proc/fs/cifs/cifsFYI` == "7" ] ; then
+ echo
+ else
+ echo 7 > /proc/fs/cifs/cifsFYI
+ fi
+else
+ logger -t LINUX_TEAM "NAO POSSUI MOUNT POINT PARA TESTE DO CIFS"
+ exit 1
+fi
 }
-
 ajtracesmb()
 {
-        CFLY=$(cat /proc/fs/cifs/cifsFYI)
-        case $CFLY in
-        0)
-                echo
-        ;;
-        7)
-                echo 0 > /proc/fs/cifs/cifsFYI
-        ;;
-        *)
-                echo 0 > /proc/fs/cifs/cifsFYI
-        ;;
-        esac
+if [ -f "/proc/fs/cifs/cifsFYI" ] ; then
+ CFLY=$(cat /proc/fs/cifs/cifsFYI)
+ case $CFLY in
+ 0)
+ echo
+ ;;
+ 7)
+ echo 0 > /proc/fs/cifs/cifsFYI
+ ;;
+ *)
+ echo 0 > /proc/fs/cifs/cifsFYI
+ ;;
+ esac
+else
+ logger -t LINUX_TEAM "NAO POSSUI MOUNT POINT PARA TESTE DO CIFS"
+ exit 1
+fi
 }
-
 case $1 in
-
 tracesmb)
-        tracesmb
-
+ tracesmb
 ;;
-
 file)
-        FILECR=$(mount | grep cifs | grep RTC | awk '{print $3}')
-        if [ $? -eq "0" ] ; then
-                touch ${FILECR}/$$_file
-                [ -f "${FILECR}/$$_file" ] && rm -rf ${FILECR}/$$_file
-        else
-                echo "NAO FOI CRIADO O ARQUIVO" >> $DIRCIFS/erro_code.log
-        fi
+ FILEMNT=$(mount | grep cifs)
+ if [ $? -eq "0" ] ; then
+ FILECR=$(mount | grep cifs | grep RTC | awk '{print $3}')
+ touch ${FILECR}/$$_file
+ [ -f "${FILECR}/$$_file" ] && rm -rf ${FILECR}/$$_file
+ else
+ logger -t LINUX_TEAM "NAO POSSUI MOUNT POINT PARA TESTE DO CIFS"
+ exit 1
+ fi
 ;;
-
 ajtracesmb)
-        ajtracesmb
-
-;;
-bkp)
-        DIRCIFS="/var/log/cifs-debug"
-        [ -d "$DIRCIFS/backup" ] || mkdir -p ${DIRCIFS}/backup
-        tar -cjvf /var/log/cifs-debug/backup/backup.tar.bz2 /var/log/cifs-debug/*
+ ajtracesmb
 ;;
 man)
-  echo
-  echo
-  echo "Usage: $0 tracesmb - Debug TraceSMB Ativado "
-  echo
-  echo "Usage: $0 file - cria e remove um arquivo dentro do mount point "
-  echo
-  echo "Usage: $0 ajtracesmb - Debug TraceSMB Desativado "
-  echo
-  echo "Usage: $0 bkp - tarball <bz2> /var/log/cifs-debug/backup/backup_<date>.tar.bz2 "
+ echo
+ echo
+ echo "Usage: $0 tracesmb - Debug TraceSMB Ativado "
+ echo
+ echo "Usage: $0 file - cria e remove um arquivo dentro do mount point "
+ echo
+ echo "Usage: $0 ajtracesmb - Debug TraceSMB Desativado "
+ echo
 ;;
-
 *)
-        exit 1
+ exit 1
 ;;
-
 esac
 	
