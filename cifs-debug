@@ -22,24 +22,24 @@
 
 4.	Adicionar a linha na Crontab para criar o arquivo na share e remover a cada 1 minuto.
 
-	*/1 * * * * sh /etc/scripts/cifs-debug.sh file
+	*/1 * * * * sh /etc/cifs-debug.sh file
 
-5.	Adicionar o tracesmb para monitorar eventos de erros todos os dias as 20:00 
+5.	Adicionar o tracesmb para monitorar eventos de erros todos os dias ex: as 20:00 
 
-	00 20 * * * sh /etc/scripts/cifs-debug.sh tracesmb
+	00 20 * * * sh /etc/cifs-debug.sh tracesmb
 
-6.	Criar o dump monitorando a porta 445 na crontab (das 21:00 até as 22:30)
+6.	Verificar o horario do dump monitorando a porta 445 na crontab ex: (das 21:00 até as 22:30)
 
 	00 21 * * * /usr/sbin/tcpdump -i any -s100 -z gzip -w /var/log/cifs-debug/cifs-debug_$(hostname | awk -F. '{print $1}')_filegzip.pcap port 445 &
 	30 23 * * * /usr/bin/killall tcpdump
 
-7.	Remover o tracesmb (log) todos os dias as 23:40
+7.	Remover o tracesmb (log) todos os dias as ex: 23:40
 
-	40 23 * * * sh /etc/scripts/cifs-debug.sh ajtracesmb
+	40 23 * * * sh /etc/cifs-debug.sh ajtracesmb
 
 8.  Backup do dump todos os dias as 23:59
 
-	59 23 * * * sh /etc/scripts/cifs-debug.sh bkp
+	59 23 * * * sh /etc/cifs-debug.sh bkp
 
 9. Criar o script 
 
